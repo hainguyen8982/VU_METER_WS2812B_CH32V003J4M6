@@ -1,0 +1,9 @@
+# MounRiver Studio build artifacts
+obj/
+.template/
+.mrs/
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
