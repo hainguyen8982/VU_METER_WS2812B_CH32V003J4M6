@@ -108,14 +108,14 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     result.left_raw_p2p = ema_p2p_L;
     result.right_raw_p2p = ema_p2p_R;
 
-    // Noise subtraction & cutoff (Tối ưu hóa cho nguồn phát âm lượng 80-90%)
+    // Noise subtraction & cutoff (Tối ưu hóa cân bằng giữa nhạc dạo cực nhỏ và lọc nhiễu tĩnh)
     int an_izm_l = 0;
     int an_izm_r = 0;
-    if (ema_p2p_L > 42) {
-        an_izm_l = ema_p2p_L - 30;
+    if (ema_p2p_L > 32) {
+        an_izm_l = ema_p2p_L - 22;
     }
-    if (ema_p2p_R > 42) {
-        an_izm_r = ema_p2p_R - 30;
+    if (ema_p2p_R > 32) {
+        an_izm_r = ema_p2p_R - 22;
     }// Shared AGC Max Peak Tracking
     static int dynamic_max = 64;
     int max_val = (an_izm_l > an_izm_r) ? an_izm_l : an_izm_r;
