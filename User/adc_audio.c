@@ -108,14 +108,48 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     result.left_raw_p2p = ema_p2p_L;
     result.right_raw_p2p = ema_p2p_R;
 
+    // Sliding window history to detect signal variance (dynamic music vs static hum)
+    static uint16_t hist_L[16] = {0};
+    static uint16_t hist_R[16] = {0};
+    static uint8_t hist_idx = 0;
+
+    hist_L[hist_idx] = ema_p2p_L;
+    hist_R[hist_idx] = ema_p2p_R;
+    hist_idx = (hist_idx + 1) % 16;
+
+    // Calculate max and min in the sliding window of 250ms
+    uint16_t max_hist_L = 0, min_hist_L = 1024;
+    uint16_t max_hist_R = 0, min_hist_R = 1024;
+    for (uint8_t i = 0; i < 16; i++) {
+        if (hist_L[i] > max_hist_L) max_hist_L = hist_L[i];
+        if (hist_L[i] < min_hist_L) min_hist_L = hist_L[i];
+
+        if (hist_R[i] > max_hist_R) max_hist_R = hist_R[i];
+        if (hist_R[i] < min_hist_R) min_hist_R = hist_R[i];
+    }
+    uint16_t diff_L = max_hist_L - min_hist_L;
+    uint16_t diff_R = max_hist_R - min_hist_R;
+
     // Noise subtraction & cutoff (Tối ưu hóa cân bằng giữa nhạc dạo cực nhỏ và lọc nhiễu tĩnh)
     int an_izm_l = 0;
     int an_izm_r = 0;
-    if (ema_p2p_L > 32) {
-        an_izm_l = ema_p2p_L - 22;
+
+    // Left Channel: Mute instantly if signal is extremely flat (hum) and low
+    if (ema_p2p_L > 22) {
+        if (diff_L < 5 && ema_p2p_L < 45) {
+            an_izm_l = 0; // Classify as static hum -> Mute
+        } else {
+            an_izm_l = ema_p2p_L - 15; // Active music -> High sensitivity subtraction
+        }
     }
-    if (ema_p2p_R > 32) {
-        an_izm_r = ema_p2p_R - 22;
+
+    // Right Channel: Mute instantly if signal is extremely flat (hum) and low
+    if (ema_p2p_R > 22) {
+        if (diff_R < 5 && ema_p2p_R < 45) {
+            an_izm_r = 0; // Classify as static hum -> Mute
+        } else {
+            an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
+        }
     }// Shared AGC Max Peak Tracking
     static int dynamic_max = 64;
     int max_val = (an_izm_l > an_izm_r) ? an_izm_l : an_izm_r;
