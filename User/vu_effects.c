@@ -233,14 +233,22 @@ void VU_Effects_Update(AudioLevels_t levels)
         }
         break;
 
-    case MODE_PEAK_ONLY:
-        // Left Channel: Rainbow Peak Dot Only
-        if (peak_L > 0 && peak_L <= 16) {
-            WS2812_SetLEDColor(peak_L - 1, Wheel((peak_L * 12 + rainbow_offset) & 0xFF));
+    case MODE_CLUB_STROBE:
+        // Left Channel: Flash entire 16 LEDs with dynamic brightness based on draw_L volume
+        for (uint8_t i = 0; i < 16; i++) {
+            Color_t col = Wheel(rainbow_offset);
+            col.r = (uint8_t)(((uint16_t)col.r * draw_L) / 16);
+            col.g = (uint8_t)(((uint16_t)col.g * draw_L) / 16);
+            col.b = (uint8_t)(((uint16_t)col.b * draw_L) / 16);
+            WS2812_SetLEDColor(i, col);
         }
-        // Right Channel: Rainbow Peak Dot Only
-        if (peak_R > 0 && peak_R <= 16) {
-            WS2812_SetLEDColor(16 + peak_R - 1, Wheel((peak_R * 12 + rainbow_offset) & 0xFF));
+        // Right Channel: Flash entire 16 LEDs (180 deg out of phase color)
+        for (uint8_t i = 0; i < 16; i++) {
+            Color_t col = Wheel(rainbow_offset + 128);
+            col.r = (uint8_t)(((uint16_t)col.r * draw_R) / 16);
+            col.g = (uint8_t)(((uint16_t)col.g * draw_R) / 16);
+            col.b = (uint8_t)(((uint16_t)col.b * draw_R) / 16);
+            WS2812_SetLEDColor(16 + i, col);
         }
         break;
 
@@ -311,6 +319,25 @@ void VU_Effects_Update(AudioLevels_t levels)
         // Right Channel: Rainbow running ripple waterfall flow
         for (uint8_t i = 0; i < draw_R; i++) {
             uint8_t hue = (i * 15 - rainbow_offset) & 0xFF;
+            WS2812_SetLEDColor(16 + i, Wheel(hue));
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
+        }
+        break;
+
+    case MODE_INTERLACED_FLOW:
+        // Left Channel: DNA double helix criss-cross color flow
+        for (uint8_t i = 0; i < draw_L; i++) {
+            uint8_t hue = (i % 2 == 0) ? ((i * 15 + rainbow_offset) & 0xFF) : (((15 - i) * 15 + rainbow_offset) & 0xFF);
+            WS2812_SetLEDColor(i, Wheel(hue));
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255));
+        }
+        // Right Channel: DNA double helix criss-cross color flow
+        for (uint8_t i = 0; i < draw_R; i++) {
+            uint8_t hue = (i % 2 == 0) ? ((i * 15 + rainbow_offset) & 0xFF) : (((15 - i) * 15 + rainbow_offset) & 0xFF);
             WS2812_SetLEDColor(16 + i, Wheel(hue));
         }
         if (peak_R > 0 && peak_R <= 16) {
