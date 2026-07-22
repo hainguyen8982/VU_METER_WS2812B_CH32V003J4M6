@@ -17,6 +17,13 @@ static uint8_t display_R = 0;
 // Color Wheel offset for animated modes
 static uint8_t rainbow_offset = 0;
 
+// Lightweight LCG pseudo-random generator to save Flash and RAM
+static uint32_t random_seed = 12345;
+static uint16_t get_random(void) {
+    random_seed = random_seed * 1664525UL + 1013904223UL;
+    return (uint16_t)(random_seed >> 16);
+}
+
 void VU_Effects_Init(void)
 {
     current_mode = MODE_CLASSIC_VU;
@@ -479,6 +486,27 @@ void VU_Effects_Update(AudioLevels_t levels)
         }
         if (peak_R > 0 && peak_R <= 16) {
             WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255)); // White peak dot
+        }
+        break;
+
+    case MODE_STAGE_STROBE:
+        // Left Channel: Flashes random spotlight positions within the volume height
+        if (draw_L > 0) {
+            uint8_t num_dots = draw_L / 3;
+            if (num_dots == 0) num_dots = 1;
+            for (uint8_t d = 0; d < num_dots; d++) {
+                uint8_t rand_pos = get_random() % draw_L;
+                WS2812_SetLEDColor(rand_pos, Wheel((get_random() + d * 50) & 0xFF));
+            }
+        }
+        // Right Channel: Flashes random spotlight positions within the volume height
+        if (draw_R > 0) {
+            uint8_t num_dots = draw_R / 3;
+            if (num_dots == 0) num_dots = 1;
+            for (uint8_t d = 0; d < num_dots; d++) {
+                uint8_t rand_pos = 16 + (get_random() % draw_R);
+                WS2812_SetLEDColor(rand_pos, Wheel((get_random() + d * 50) & 0xFF));
+            }
         }
         break;
     }
