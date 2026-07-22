@@ -232,6 +232,91 @@ void VU_Effects_Update(AudioLevels_t levels)
             WS2812_SetLEDColor(16 + i, RGB(0, 220, 255));
         }
         break;
+
+    case MODE_PEAK_ONLY:
+        // Left Channel: Rainbow Peak Dot Only
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, Wheel((peak_L * 12 + rainbow_offset) & 0xFF));
+        }
+        // Right Channel: Rainbow Peak Dot Only
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, Wheel((peak_R * 12 + rainbow_offset) & 0xFF));
+        }
+        break;
+
+    case MODE_SPLIT_COLOR:
+        // Left Channel: Cyan for bottom 8, Magenta for top 8
+        for (uint8_t i = 0; i < draw_L; i++) {
+            WS2812_SetLEDColor(i, (i < 8) ? RGB(0, 255, 200) : RGB(255, 0, 180));
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255));
+        }
+        // Right Channel: Cyan/Magenta split
+        for (uint8_t i = 0; i < draw_R; i++) {
+            WS2812_SetLEDColor(16 + i, (i < 8) ? RGB(0, 255, 200) : RGB(255, 0, 180));
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
+        }
+        break;
+
+    case MODE_OUT_IN:
+        // Left Channel: Grows inwards from LED 0 & 15 towards center
+        {
+            uint8_t fill_L = draw_L / 2;
+            for (uint8_t i = 0; i < fill_L; i++) {
+                Color_t col = Wheel((i * 30 + rainbow_offset) & 0xFF);
+                WS2812_SetLEDColor(i, col);
+                WS2812_SetLEDColor(15 - i, col);
+            }
+        }
+        // Right Channel: Grows inwards from LED 16 & 31 towards center
+        {
+            uint8_t fill_R = draw_R / 2;
+            for (uint8_t i = 0; i < fill_R; i++) {
+                Color_t col = Wheel((i * 30 + rainbow_offset) & 0xFF);
+                WS2812_SetLEDColor(16 + i, col);
+                WS2812_SetLEDColor(31 - i, col);
+            }
+        }
+        break;
+
+    case MODE_GREEN_RED_PEAK:
+        // Left Channel: Solid Green bar + Solid Red Peak Dot
+        for (uint8_t i = 0; i < draw_L; i++) {
+            WS2812_SetLEDColor(i, RGB(0, 255, 0));
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 0, 0));
+        }
+        // Right Channel: Solid Green bar + Solid Red Peak Dot
+        for (uint8_t i = 0; i < draw_R; i++) {
+            WS2812_SetLEDColor(16 + i, RGB(0, 255, 0));
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 0, 0));
+        }
+        break;
+
+    case MODE_RAINBOW_FLOW:
+        // Left Channel: Rainbow running ripple waterfall flow
+        for (uint8_t i = 0; i < draw_L; i++) {
+            uint8_t hue = (i * 15 - rainbow_offset) & 0xFF;
+            WS2812_SetLEDColor(i, Wheel(hue));
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255));
+        }
+        // Right Channel: Rainbow running ripple waterfall flow
+        for (uint8_t i = 0; i < draw_R; i++) {
+            uint8_t hue = (i * 15 - rainbow_offset) & 0xFF;
+            WS2812_SetLEDColor(16 + i, Wheel(hue));
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
+        }
+        break;
     }
 
     WS2812_Show();
