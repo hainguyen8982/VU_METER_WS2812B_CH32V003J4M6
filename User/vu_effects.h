@@ -8,6 +8,8 @@
 
 typedef enum {
     MODE_CLASSIC_VU = 0,     // Green-Yellow-Red Gradient with White Peak
+    MODE_STAGE_STROBE,       // Random spotlight flashes flashing inside the volume height [Mode 1]
+    MODE_METEOR_SHOWER,      // Floating white meteor head with a fire-colored trail [Mode 2]
     MODE_RAINBOW_VU,         // Rainbow Spectrum Gradient
     MODE_CENTER_OUT,         // Expansion from center
     MODE_FIRE_HEAT,          // Fire / Heatmap volume reaction
@@ -22,9 +24,7 @@ typedef enum {
     MODE_FADING_GLOW,        // Shooting sparks with slowly fading glowing trails
     MODE_COLLISION_BEAT,     // Mirror columns colliding in the center
     MODE_LEVEL_ALERT,        // Single color column that changes color with height
-    MODE_RAINBOW_ACCORDION,  // Rainbow that stretches/squashes with volume
-    MODE_METEOR_SHOWER,      // Floating white meteor head with a fire-colored trail
-    MODE_STAGE_STROBE        // Random spotlight flashes flashing inside the volume height
+    MODE_RAINBOW_ACCORDION   // Rainbow that stretches/squashes with volume
 } VU_EffectMode_t;
 
 void VU_Effects_Init(void);

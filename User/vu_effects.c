@@ -17,11 +17,15 @@ static uint8_t display_R = 0;
 // Color Wheel offset for animated modes
 static uint8_t rainbow_offset = 0;
 
-// Lightweight LCG pseudo-random generator to save Flash and RAM
-static uint32_t random_seed = 12345;
+// Lightweight Galois LFSR 16-bit pseudo-random generator (extremely fast shift/XOR only)
+static uint16_t lfsr = 0xACE1u; // Seed must be non-zero
 static uint16_t get_random(void) {
-    random_seed = random_seed * 1664525UL + 1013904223UL;
-    return (uint16_t)(random_seed >> 16);
+    uint16_t bit = lfsr & 1;
+    lfsr >>= 1;
+    if (bit) {
+        lfsr ^= 0xB400u; // Galois taps for 16-bit LFSR
+    }
+    return lfsr;
 }
 
 void VU_Effects_Init(void)
@@ -36,6 +40,7 @@ void VU_Effects_Init(void)
     display_L = 0;
     display_R = 0;
     rainbow_offset = 0;
+    lfsr = 0xACE1u;
 }
 
 void VU_Effects_SetMode(VU_EffectMode_t mode)
