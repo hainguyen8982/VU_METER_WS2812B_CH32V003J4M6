@@ -494,26 +494,6 @@ void VU_Effects_Update(AudioLevels_t levels)
         }
         break;
 
-    case MODE_STAGE_STROBE:
-        // Left Channel: Flashes random spotlight positions within the volume height
-        if (draw_L > 0) {
-            uint8_t num_dots = draw_L / 3;
-            if (num_dots == 0) num_dots = 1;
-            for (uint8_t d = 0; d < num_dots; d++) {
-                uint8_t rand_pos = get_random() % draw_L;
-                WS2812_SetLEDColor(rand_pos, Wheel((get_random() + d * 50) & 0xFF));
-            }
-        }
-        // Right Channel: Flashes random spotlight positions within the volume height
-        if (draw_R > 0) {
-            uint8_t num_dots = draw_R / 3;
-            if (num_dots == 0) num_dots = 1;
-            for (uint8_t d = 0; d < num_dots; d++) {
-                uint8_t rand_pos = 16 + (get_random() % draw_R);
-                WS2812_SetLEDColor(rand_pos, Wheel((get_random() + d * 50) & 0xFF));
-            }
-        }
-        break;
     }
 
     WS2812_Show();

@@ -4,12 +4,11 @@
 #include "ws2812.h"
 #include "adc_audio.h"
 
-#define NUM_EFFECT_MODES 17
+#define NUM_EFFECT_MODES 16
 
 typedef enum {
     MODE_CLASSIC_VU = 0,     // Green-Yellow-Red Gradient with White Peak
-    MODE_STAGE_STROBE,       // Random spotlight flashes flashing inside the volume height [Mode 1]
-    MODE_METEOR_SHOWER,      // Floating white meteor head with a fire-colored trail [Mode 2]
+    MODE_METEOR_SHOWER,      // Floating white meteor head with a fire-colored trail [Mode 1]
     MODE_RAINBOW_VU,         // Rainbow Spectrum Gradient
     MODE_CENTER_OUT,         // Expansion from center
     MODE_FIRE_HEAT,          // Fire / Heatmap volume reaction
