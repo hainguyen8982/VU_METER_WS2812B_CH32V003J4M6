@@ -447,6 +447,40 @@ void VU_Effects_Update(AudioLevels_t levels)
             WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
         }
         break;
+
+    case MODE_METEOR_SHOWER:
+        // Left Channel: Meteor head (White) trailing fire colors (Yellow -> Orange -> Red)
+        if (draw_L > 0) {
+            WS2812_SetLEDColor(draw_L - 1, RGB(255, 255, 255)); // White Head
+            for (int16_t i = draw_L - 2; i >= 0; i--) {
+                uint8_t dist = (draw_L - 1 - i);
+                if (dist == 1)      WS2812_SetLEDColor(i, RGB(255, 200, 0)); // Yellow
+                else if (dist == 2) WS2812_SetLEDColor(i, RGB(255, 100, 0)); // Orange
+                else if (dist == 3) WS2812_SetLEDColor(i, RGB(180, 50, 0));  // Red
+                else if (dist == 4) WS2812_SetLEDColor(i, RGB(80, 0, 0));    // Dark Red
+                else                WS2812_SetLEDColor(i, RGB(0, 0, 0));     // Clear base (floating effect)
+            }
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255)); // White peak dot
+        }
+
+        // Right Channel: Meteor head (White) trailing fire colors
+        if (draw_R > 0) {
+            WS2812_SetLEDColor(16 + draw_R - 1, RGB(255, 255, 255)); // White Head
+            for (int16_t i = draw_R - 2; i >= 0; i--) {
+                uint8_t dist = (draw_R - 1 - i);
+                if (dist == 1)      WS2812_SetLEDColor(16 + i, RGB(255, 200, 0)); // Yellow
+                else if (dist == 2) WS2812_SetLEDColor(16 + i, RGB(255, 100, 0)); // Orange
+                else if (dist == 3) WS2812_SetLEDColor(16 + i, RGB(180, 50, 0));  // Red
+                else if (dist == 4) WS2812_SetLEDColor(16 + i, RGB(80, 0, 0));    // Dark Red
+                else                WS2812_SetLEDColor(16 + i, RGB(0, 0, 0));     // Clear base (floating effect)
+            }
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255)); // White peak dot
+        }
+        break;
     }
 
     WS2812_Show();
