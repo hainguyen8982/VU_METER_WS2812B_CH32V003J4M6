@@ -63,7 +63,16 @@ static Color_t Get_Classic_Color(uint8_t step)
 
 void VU_Effects_Update(AudioLevels_t levels)
 {
-    WS2812_Clear();
+    if (current_mode == MODE_FADING_GLOW) {
+        // Decay entire frame buffer by ~19% (multiply by 13/16) to create analog glow trails
+        for (uint8_t i = 0; i < NUM_LEDS; i++) {
+            leds[i].r = (uint8_t)(((uint16_t)leds[i].r * 13) >> 4);
+            leds[i].g = (uint8_t)(((uint16_t)leds[i].g * 13) >> 4);
+            leds[i].b = (uint8_t)(((uint16_t)leds[i].b * 13) >> 4);
+        }
+    } else {
+        WS2812_Clear();
+    }
     rainbow_offset += 2; // Cycle animation speed
 
     uint8_t target_L = levels.left_level * 10;
@@ -339,6 +348,100 @@ void VU_Effects_Update(AudioLevels_t levels)
         for (uint8_t i = 0; i < draw_R; i++) {
             uint8_t hue = (i % 2 == 0) ? ((i * 15 + rainbow_offset) & 0xFF) : (((15 - i) * 15 + rainbow_offset) & 0xFF);
             WS2812_SetLEDColor(16 + i, Wheel(hue));
+        }
+        if (peak_R > 0 && peak_R <= 16) {
+            WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
+        }
+        break;
+
+    case MODE_FADING_GLOW:
+        // Left Channel: Shoots a bright Magenta/Pink dot that fades out slowly
+        if (draw_L > 0 && draw_L <= 16) {
+            WS2812_SetLEDColor(draw_L - 1, RGB(255, 0, 150));
+        }
+        // Right Channel: Shoots a bright Ice Blue dot that fades out slowly
+        if (draw_R > 0 && draw_R <= 16) {
+            WS2812_SetLEDColor(16 + draw_R - 1, RGB(0, 255, 200));
+        }
+        break;
+
+    case MODE_COLLISION_BEAT:
+        // Left Channel: Outer ends grow inwards (Orange) and spark White when colliding
+        {
+            uint8_t fill_L = draw_L / 2;
+            for (uint8_t i = 0; i < fill_L; i++) {
+                WS2812_SetLEDColor(i, RGB(255, 100, 0));
+                WS2812_SetLEDColor(15 - i, RGB(255, 100, 0));
+            }
+            if (draw_L >= 14) {
+                WS2812_SetLEDColor(6, RGB(255, 255, 255));
+                WS2812_SetLEDColor(7, RGB(255, 255, 255));
+                WS2812_SetLEDColor(8, RGB(255, 255, 255));
+                WS2812_SetLEDColor(9, RGB(255, 255, 255));
+            }
+        }
+        // Right Channel: Outer ends grow inwards (Cyan) and spark White when colliding
+        {
+            uint8_t fill_R = draw_R / 2;
+            for (uint8_t i = 0; i < fill_R; i++) {
+                WS2812_SetLEDColor(16 + i, RGB(0, 200, 255));
+                WS2812_SetLEDColor(31 - i, RGB(0, 200, 255));
+            }
+            if (draw_R >= 14) {
+                WS2812_SetLEDColor(22, RGB(255, 255, 255));
+                WS2812_SetLEDColor(23, RGB(255, 255, 255));
+                WS2812_SetLEDColor(24, RGB(255, 255, 255));
+                WS2812_SetLEDColor(25, RGB(255, 255, 255));
+            }
+        }
+        break;
+
+    case MODE_LEVEL_ALERT:
+        // Left Channel: Single color column that changes color with volume
+        {
+            Color_t col;
+            if (draw_L < 10) col = RGB(0, 255, 0);       // Green
+            else if (draw_L < 14) col = RGB(255, 120, 0); // Orange
+            else col = RGB(255, 0, 0);                    // Red
+            for (uint8_t i = 0; i < draw_L; i++) {
+                WS2812_SetLEDColor(i, col);
+            }
+            if (peak_L > 0 && peak_L <= 16) {
+                WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255));
+            }
+        }
+        // Right Channel: Single color column that changes color with volume
+        {
+            Color_t col;
+            if (draw_R < 10) col = RGB(0, 255, 0);       // Green
+            else if (draw_R < 14) col = RGB(255, 120, 0); // Orange
+            else col = RGB(255, 0, 0);                    // Red
+            for (uint8_t i = 0; i < draw_R; i++) {
+                WS2812_SetLEDColor(16 + i, col);
+            }
+            if (peak_R > 0 && peak_R <= 16) {
+                WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));
+            }
+        }
+        break;
+
+    case MODE_RAINBOW_ACCORDION:
+        // Left Channel: Stretches/squashes the full 256-color rainbow to fit the volume
+        if (draw_L > 0) {
+            for (uint8_t i = 0; i < draw_L; i++) {
+                uint8_t hue = (uint8_t)((i * 255) / draw_L + rainbow_offset);
+                WS2812_SetLEDColor(i, Wheel(hue));
+            }
+        }
+        if (peak_L > 0 && peak_L <= 16) {
+            WS2812_SetLEDColor(peak_L - 1, RGB(255, 255, 255));
+        }
+        // Right Channel: Stretches/squashes the full 256-color rainbow to fit the volume
+        if (draw_R > 0) {
+            for (uint8_t i = 0; i < draw_R; i++) {
+                uint8_t hue = (uint8_t)((i * 255) / draw_R + rainbow_offset);
+                WS2812_SetLEDColor(16 + i, Wheel(hue));
+            }
         }
         if (peak_R > 0 && peak_R <= 16) {
             WS2812_SetLEDColor(16 + peak_R - 1, RGB(255, 255, 255));

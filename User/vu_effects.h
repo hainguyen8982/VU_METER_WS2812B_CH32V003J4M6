@@ -4,7 +4,7 @@
 #include "ws2812.h"
 #include "adc_audio.h"
 
-#define NUM_EFFECT_MODES 12
+#define NUM_EFFECT_MODES 15
 
 typedef enum {
     MODE_CLASSIC_VU = 0,     // Green-Yellow-Red Gradient with White Peak
@@ -18,7 +18,11 @@ typedef enum {
     MODE_OUT_IN,             // Inward growth from outer ends to center
     MODE_GREEN_RED_PEAK,     // Solid Green column with a Red Peak Dot
     MODE_RAINBOW_FLOW,       // Rainbow ripple flow animation
-    MODE_INTERLACED_FLOW     // DNA double helix cross-flow
+    MODE_INTERLACED_FLOW,    // DNA double helix cross-flow
+    MODE_FADING_GLOW,        // Shooting sparks with slowly fading glowing trails
+    MODE_COLLISION_BEAT,     // Mirror columns colliding in the center
+    MODE_LEVEL_ALERT,        // Single color column that changes color with height
+    MODE_RAINBOW_ACCORDION   // Rainbow that stretches/squashes with volume
 } VU_EffectMode_t;
 
 void VU_Effects_Init(void);
