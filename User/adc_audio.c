@@ -150,6 +150,7 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
         } else {
             an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
         }
+    }
     // Shared AGC Max Peak & Min Floor Tracking
     static int dynamic_max = 64;
     static int dynamic_min = 0;
