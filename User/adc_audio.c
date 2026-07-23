@@ -132,7 +132,7 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
         dynamic_max = 64;
         dynamic_min = 0;
     } else if (dynamic_max > 64) {
-        if (max_val < 30) {
+        if (max_val < 60) {
             dynamic_max -= (dynamic_max >> 2) + 2; // Xả cực nhanh khi dừng nhạc để tắt đèn ngay
         } else {
             dynamic_max -= (dynamic_max >> 5) + 1; // Xả chậm mượt mà khi đang phát nhạc
@@ -144,7 +144,7 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
         if (min_val < dynamic_min) {
             dynamic_min = min_val;
         } else {
-            if (max_val < 30) {
+            if (max_val < 60) {
                 dynamic_min -= (dynamic_min >> 2) + 1; // Xả cực nhanh đáy khi dừng nhạc
             } else {
                 dynamic_min += (min_val - dynamic_min) >> 5; // Co giãn sát theo đáy nhạc thực tế
