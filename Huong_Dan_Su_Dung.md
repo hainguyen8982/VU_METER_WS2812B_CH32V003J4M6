@@ -1,6 +1,6 @@
 # SƠ ĐỒ HƯỚNG DẪN LẮP RÁP & SỬ DỤNG STEREO VU LED METER (CH32V003J4M6)
 
-Dự án VU LED Stereo 2 kênh sử dụng vi điều khiển **CH32V003J4M6 (SOP-8)** điều khiển chuỗi **32 LED WS2812** (4 module 1x8 ghép nối tiếp) với 6 chế độ hiệu ứng ánh sáng.
+Dự án VU LED Stereo 2 kênh sử dụng vi điều khiển **CH32V003J4M6 (SOP-8)** điều khiển chuỗi **32 LED WS2812** (4 module 1x8 ghép nối tiếp) với **17 chế độ hiệu ứng** ánh sáng độc đáo.
 
 ---
 
@@ -53,15 +53,26 @@ Audio In Kênh Trái/SWCLK ──3─┤PA2   │PC2├─6── WS2812 Data Ou
 
 ## 2. Thao tác điều khiển Nút bấm (`PC4`)
 
-* **Nhấn ngắn (< 0.6 giây):** Chuyển qua lại giữa **6 chế độ hiệu ứng**:
+* **Nhấn ngắn (< 0.6 giây):** Chuyển qua lại giữa **17 chế độ hiệu ứng**:
   1. `Mode 0`: Classic Green-Yellow-Red Gradient + Đỉnh rơi Peak Dot màu trắng.
-  2. `Mode 1`: Rainbow Dynamic Gradient + Peak Dot trắng.
-  3. `Mode 2`: Center-Out Symmetric Meter (Tín hiệu tỏa từ giữa ra 2 biên).
-  4. `Mode 3`: Fire / Heat Map Effect (Ngọn lửa bùng phát theo Volume).
-  5. `Mode 4`: Ocean Cyan & Blue Wave (Tông màu xanh đại dương dịu mắt).
-  6. `Mode 5`: Solid Purple/Cyan Pulse (Phong cách tối giản).
+  2. `Mode 1`: Mưa sao băng (Meteor Shower) đầu trắng đuôi lửa lướt lơ lửng.
+  3. `Mode 2`: Rainbow Dynamic Gradient + Peak Dot trắng.
+  4. `Mode 3`: Center-Out Symmetric Meter (Tín hiệu tỏa từ giữa ra 2 biên).
+  5. `Mode 4`: Fire / Heat Map Effect (Ngọn lửa bùng phát theo Volume).
+  6. `Mode 5`: Ocean Cyan & Blue Wave (Tông màu xanh đại dương dịu mắt).
+  7. `Mode 6`: Solid Color Pulse (Phong cách tối giản nhấp nháy theo âm lượng).
+  8. `Mode 7`: Club Strobe (Nháy toàn bộ dải LED chớp động cực mạnh).
+  9. `Mode 8`: Split Color (Chia đôi màu sắc đối xứng sắc nét).
+  10. `Mode 9`: Out-In Symmetric (Tín hiệu dồn từ 2 rìa biên vào giữa).
+  11. `Mode 10`: Green Column + Red Peak (Cột xanh lá với điểm đỉnh màu đỏ nổi bật).
+  12. `Mode 11`: Rainbow Flow Animation (Hiệu ứng sóng cầu vồng trôi liên tục).
+  13. `Mode 12`: Interlaced Flow (Hiệu ứng sóng kép DNA đan chéo).
+  14. `Mode 13`: Fading Glow Trails (Hiệu ứng vẩy tia lửa để lại vệt sáng mờ dần).
+  15. `Mode 14`: Collision Beat (Cột sóng hai bên va chạm nhau ở giữa tạo tia sáng).
+  16. `Mode 15`: Level Alert (Cột đổi màu toàn bộ dựa trên độ cao âm lượng).
+  17. `Mode 16`: Rainbow Accordion (Sóng cầu vồng co giãn rộng hẹp theo Volume).
 
-* **Nhấn giữ (> 0.8 giây):** Thay đổi **4 mức độ sáng** LED (35% $\rightarrow$ 50% $\rightarrow$ 75% $\rightarrow$ 100%).
+* **Nhấn giữ (> 0.5 giây):** Tăng hoặc giảm độ sáng liên tục (Dimming vô cấp). Hướng tăng/giảm sẽ tự động đảo chiều ở mỗi lần giữ tiếp theo. Mức độ sáng được tự động lưu vĩnh viễn vào bộ nhớ Flash ngay sau khi nhả nút.
 
 ---
 
@@ -69,6 +80,6 @@ Audio In Kênh Trái/SWCLK ──3─┤PA2   │PC2├─6── WS2812 Data Ou
 
 - [main.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/main.c): Vòng lặp chính, khởi tạo và điều phối các module.
 - [ws2812.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/ws2812.h) & [ws2812.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/ws2812.c): Driver bit-banging tốc độ cao xuất dữ liệu cho 32 LED qua `PC2`.
-- [adc_audio.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/adc_audio.h) & [adc_audio.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/adc_audio.c): Lấy mẫu tín hiệu âm thanh Stereo 2 kênh `PA2` & `PC1` với bộ lọc dải Auto Gain Control.
+- [adc_audio.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/adc_audio.h) & [adc_audio.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/adc_audio.c): Lấy mẫu tín hiệu âm thanh Stereo 2 kênh `PA2` (Trái) & `PD6` (Phải) với bộ tự động thích ứng dải động (Auto Gain Control - AGC).
 - [button.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/button.h) & [button.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/button.c): Quét nút bấm chống dội trên `PC4`.
-- [vu_effects.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/vu_effects.h) & [vu_effects.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/vu_effects.c): Engine quản lý 6 hiệu ứng và vật lý đỉnh rơi (Peak Hold & Gravity Decay).
+- [vu_effects.h](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/vu_effects.h) & [vu_effects.c](file:///d:/Projects_2026/VU_LED_W2812/CH32V003J4M/User/vu_effects.c): Engine quản lý 17 hiệu ứng và vật lý đỉnh rơi (Peak Hold & Gravity Decay).

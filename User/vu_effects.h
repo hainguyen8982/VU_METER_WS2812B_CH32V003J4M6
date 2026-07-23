@@ -4,7 +4,7 @@
 #include "ws2812.h"
 #include "adc_audio.h"
 
-#define NUM_EFFECT_MODES 16
+#define NUM_EFFECT_MODES 17
 
 typedef enum {
     MODE_CLASSIC_VU = 0,     // Green-Yellow-Red Gradient with White Peak
