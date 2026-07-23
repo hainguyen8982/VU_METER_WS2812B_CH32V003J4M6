@@ -205,6 +205,13 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     if (lvl_L > AUDIO_MAX_LEVEL) lvl_L = AUDIO_MAX_LEVEL;
     if (lvl_R > AUDIO_MAX_LEVEL) lvl_R = AUDIO_MAX_LEVEL;
 
+    // Temporary debug print to diagnose the ground hum parameters
+    static uint8_t print_cnt = 0;
+    if (++print_cnt >= 30) {
+        print_cnt = 0;
+        printf("DBG: p2p=%d, diff=%d, max=%d, min=%d\r\n", ema_p2p_L, diff_L, dynamic_max, dynamic_min);
+    }
+
     result.left_level = lvl_L;
     result.right_level = lvl_R;
 
