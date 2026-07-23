@@ -124,20 +124,21 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     int max_val = (an_izm_l > an_izm_r) ? an_izm_l : an_izm_r;
     int min_val = (an_izm_l < an_izm_r) ? an_izm_l : an_izm_r;
 
-    // Peak tracking (Đỉnh âm lượng)
+    // Peak tracking (Đỉnh âm lượng - Cho phép xả hết về mức tín hiệu thực tế)
     if (max_val > dynamic_max) {
         dynamic_max = max_val;
     } else if (max_val == 0) {
         // Reset dynamic_max and dynamic_min instantly on pause/silence to prevent delays
-        dynamic_max = 64;
+        dynamic_max = 0;
         dynamic_min = 0;
-    } else if (dynamic_max > 64) {
+    } else if (dynamic_max > 0) {
         if (max_val < 60) {
             dynamic_max -= (dynamic_max >> 2) + 2; // Xả cực nhanh khi dừng nhạc để tắt đèn ngay
         } else {
             dynamic_max -= (dynamic_max >> 5) + 1; // Xả chậm mượt mà khi đang phát nhạc
         }
     }
+    if (dynamic_max < 0) dynamic_max = 0;
 
     // Floor tracking (Đáy âm lượng thực tế)
     if (max_val > 0) {
@@ -153,29 +154,24 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     } else {
         dynamic_min = 0;
     }
+    if (dynamic_min < 0) dynamic_min = 0;
 
     // Active dynamic range window
     uint32_t active_range = (dynamic_max > dynamic_min) ? (dynamic_max - dynamic_min) : 48;
     if (active_range < 48) active_range = 48;
 
-    // Flatness mute logic: Nhận diện nhiễu ù tĩnh khi âm lượng nhỏ và phẳng lì để ngắt đèn ngay lập tức
-    uint8_t is_noise = 0;
-    if (dynamic_max < 75 && (dynamic_max - dynamic_min) < 18) {
-        is_noise = 1;
-    }
-
     // Square-Root Scaling for high dynamic range and responsiveness
     uint8_t lvl_L = 0;
     uint8_t lvl_R = 0;
 
-    if (!is_noise && an_izm_l > dynamic_min) {
+    if (an_izm_l > dynamic_min) {
         uint32_t ratio_l = ((uint32_t)(an_izm_l - dynamic_min) * 10000UL) / active_range;
         if (ratio_l > 10000UL) ratio_l = 10000UL;
         uint32_t sqrt_l = isqrt(ratio_l * 10000UL);
         lvl_L = (uint8_t)((sqrt_l * AUDIO_MAX_LEVEL) / 10000UL);
     }
 
-    if (!is_noise && an_izm_r > dynamic_min) {
+    if (an_izm_r > dynamic_min) {
         uint32_t ratio_r = ((uint32_t)(an_izm_r - dynamic_min) * 10000UL) / active_range;
         if (ratio_r > 10000UL) ratio_r = 10000UL;
         uint32_t sqrt_r = isqrt(ratio_r * 10000UL);
