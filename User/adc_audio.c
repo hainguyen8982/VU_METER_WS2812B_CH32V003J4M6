@@ -108,14 +108,48 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     result.left_raw_p2p = ema_p2p_L;
     result.right_raw_p2p = ema_p2p_R;
 
-    // Noise subtraction & cutoff (Sử dụng mức trừ tĩnh nhạy bén)
+    // Sliding window history to detect signal variance (dynamic music vs static hum)
+    static uint16_t hist_L[16] = {0};
+    static uint16_t hist_R[16] = {0};
+    static uint8_t hist_idx = 0;
+
+    hist_L[hist_idx] = ema_p2p_L;
+    hist_R[hist_idx] = ema_p2p_R;
+    hist_idx = (hist_idx + 1) % 16;
+
+    // Calculate max and min in the sliding window of 250ms
+    uint16_t max_hist_L = 0, min_hist_L = 1024;
+    uint16_t max_hist_R = 0, min_hist_R = 1024;
+    for (uint8_t i = 0; i < 16; i++) {
+        if (hist_L[i] > max_hist_L) max_hist_L = hist_L[i];
+        if (hist_L[i] < min_hist_L) min_hist_L = hist_L[i];
+
+        if (hist_R[i] > max_hist_R) max_hist_R = hist_R[i];
+        if (hist_R[i] < min_hist_R) min_hist_R = hist_R[i];
+    }
+    uint16_t diff_L = max_hist_L - min_hist_L;
+    uint16_t diff_R = max_hist_R - min_hist_R;
+
+    // Noise subtraction & cutoff (Tối ưu hóa cân bằng giữa nhạc dạo cực nhỏ và lọc nhiễu tĩnh)
     int an_izm_l = 0;
     int an_izm_r = 0;
-    if (ema_p2p_L > 20) {
-        an_izm_l = ema_p2p_L - 15;
+
+    // Left Channel: Mute instantly if signal is extremely flat (hum) and low
+    if (ema_p2p_L > 22) {
+        if (diff_L < 5 && ema_p2p_L < 45) {
+            an_izm_l = 0; // Classify as static hum -> Mute
+        } else {
+            an_izm_l = ema_p2p_L - 15; // Active music -> High sensitivity subtraction
+        }
     }
-    if (ema_p2p_R > 20) {
-        an_izm_r = ema_p2p_R - 15;
+
+    // Right Channel: Mute instantly if signal is extremely flat (hum) and low
+    if (ema_p2p_R > 22) {
+        if (diff_R < 5 && ema_p2p_R < 45) {
+            an_izm_r = 0; // Classify as static hum -> Mute
+        } else {
+            an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
+        }
     }
 
     // Shared AGC Max Peak & Min Floor Tracking
@@ -124,37 +158,27 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     int max_val = (an_izm_l > an_izm_r) ? an_izm_l : an_izm_r;
     int min_val = (an_izm_l < an_izm_r) ? an_izm_l : an_izm_r;
 
-    // Peak tracking (Đỉnh âm lượng - Cho phép xả hết về mức tín hiệu thực tế)
+    // Peak tracking (Đỉnh âm lượng - Đặt mặc định 64 khi im lặng)
     if (max_val > dynamic_max) {
         dynamic_max = max_val;
     } else if (max_val == 0) {
         // Reset dynamic_max and dynamic_min instantly on pause/silence to prevent delays
-        dynamic_max = 0;
+        dynamic_max = 64;
         dynamic_min = 0;
-    } else if (dynamic_max > 0) {
-        if (max_val < 60) {
-            dynamic_max -= (dynamic_max >> 2) + 2; // Xả cực nhanh khi dừng nhạc để tắt đèn ngay
-        } else {
-            dynamic_max -= (dynamic_max >> 5) + 1; // Xả chậm mượt mà khi đang phát nhạc
-        }
+    } else if (dynamic_max > 64) {
+        dynamic_max -= (dynamic_max >> 5) + 1; // Smooth decay
     }
-    if (dynamic_max < 0) dynamic_max = 0;
 
     // Floor tracking (Đáy âm lượng thực tế)
     if (max_val > 0) {
         if (min_val < dynamic_min) {
             dynamic_min = min_val;
         } else {
-            if (max_val < 60) {
-                dynamic_min -= (dynamic_min >> 2) + 1; // Xả cực nhanh đáy khi dừng nhạc
-            } else {
-                dynamic_min += (min_val - dynamic_min) >> 5; // Co giãn sát theo đáy nhạc thực tế
-            }
+            dynamic_min += (min_val - dynamic_min) >> 5; // Co giãn sát theo đáy nhạc thực tế
         }
     } else {
         dynamic_min = 0;
     }
-    if (dynamic_min < 0) dynamic_min = 0;
 
     // Active dynamic range window
     uint32_t active_range = (dynamic_max > dynamic_min) ? (dynamic_max - dynamic_min) : 48;
