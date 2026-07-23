@@ -150,32 +150,56 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
         } else {
             an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
         }
-    }// Shared AGC Max Peak Tracking
+    // Shared AGC Max Peak & Min Floor Tracking
     static int dynamic_max = 64;
+    static int dynamic_min = 0;
     int max_val = (an_izm_l > an_izm_r) ? an_izm_l : an_izm_r;
+    int min_val = (an_izm_l < an_izm_r) ? an_izm_l : an_izm_r;
 
+    // Peak tracking (Đỉnh âm lượng)
     if (max_val > dynamic_max) {
         dynamic_max = max_val;
     } else if (max_val == 0) {
-        // Reset dynamic_max to 64 instantly on pause/silence to prevent delays
+        // Reset dynamic_max and dynamic_min instantly on pause/silence to prevent delays
         dynamic_max = 64;
+        dynamic_min = 0;
     } else if (dynamic_max > 64) {
         dynamic_max -= (dynamic_max >> 4) + 1; // Smooth fast decay
     }
+
+    // Floor tracking (Đáy âm lượng của bài nhạc đang phát để giữ độ tương phản)
+    if (max_val > 0) {
+        if (min_val < dynamic_min) {
+            dynamic_min = min_val;
+        } else {
+            dynamic_min += (min_val - dynamic_min) >> 6; // Co giãn chậm lên phía trên
+        }
+        // Giới hạn đáy tối đa bằng 40% đỉnh để tránh mất dải động trung bình
+        int min_limit = (dynamic_max * 4) / 10;
+        if (dynamic_min > min_limit) {
+            dynamic_min = min_limit;
+        }
+    } else {
+        dynamic_min = 0;
+    }
+
+    // Active dynamic range window
+    uint32_t active_range = (dynamic_max > dynamic_min) ? (dynamic_max - dynamic_min) : 32;
+    if (active_range < 48) active_range = 48; // Giới hạn dải tối thiểu để tránh quá nhạy ở âm lượng cực nhỏ
 
     // Square-Root Scaling for high dynamic range and responsiveness
     uint8_t lvl_L = 0;
     uint8_t lvl_R = 0;
 
-    if (an_izm_l > 0) {
-        uint32_t ratio_l = ((uint32_t)an_izm_l * 10000UL) / (uint32_t)dynamic_max;
+    if (an_izm_l > dynamic_min) {
+        uint32_t ratio_l = ((uint32_t)(an_izm_l - dynamic_min) * 10000UL) / active_range;
         if (ratio_l > 10000UL) ratio_l = 10000UL;
         uint32_t sqrt_l = isqrt(ratio_l * 10000UL);
         lvl_L = (uint8_t)((sqrt_l * AUDIO_MAX_LEVEL) / 10000UL);
     }
 
-    if (an_izm_r > 0) {
-        uint32_t ratio_r = ((uint32_t)an_izm_r * 10000UL) / (uint32_t)dynamic_max;
+    if (an_izm_r > dynamic_min) {
+        uint32_t ratio_r = ((uint32_t)(an_izm_r - dynamic_min) * 10000UL) / active_range;
         if (ratio_r > 10000UL) ratio_r = 10000UL;
         uint32_t sqrt_r = isqrt(ratio_r * 10000UL);
         lvl_R = (uint8_t)((sqrt_r * AUDIO_MAX_LEVEL) / 10000UL);
