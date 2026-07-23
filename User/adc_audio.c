@@ -108,49 +108,16 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
     result.left_raw_p2p = ema_p2p_L;
     result.right_raw_p2p = ema_p2p_R;
 
-    // Sliding window history to detect signal variance (dynamic music vs static hum)
-    static uint16_t hist_L[16] = {0};
-    static uint16_t hist_R[16] = {0};
-    static uint8_t hist_idx = 0;
-
-    hist_L[hist_idx] = ema_p2p_L;
-    hist_R[hist_idx] = ema_p2p_R;
-    hist_idx = (hist_idx + 1) % 16;
-
-    // Calculate max and min in the sliding window of 250ms
-    uint16_t max_hist_L = 0, min_hist_L = 1024;
-    uint16_t max_hist_R = 0, min_hist_R = 1024;
-    for (uint8_t i = 0; i < 16; i++) {
-        if (hist_L[i] > max_hist_L) max_hist_L = hist_L[i];
-        if (hist_L[i] < min_hist_L) min_hist_L = hist_L[i];
-
-        if (hist_R[i] > max_hist_R) max_hist_R = hist_R[i];
-        if (hist_R[i] < min_hist_R) min_hist_R = hist_R[i];
-    }
-    uint16_t diff_L = max_hist_L - min_hist_L;
-    uint16_t diff_R = max_hist_R - min_hist_R;
-
-    // Noise subtraction & cutoff (Tối ưu hóa cân bằng giữa nhạc dạo cực nhỏ và lọc nhiễu tĩnh)
+    // Noise subtraction & cutoff (Sử dụng mức trừ tĩnh nhạy bén)
     int an_izm_l = 0;
     int an_izm_r = 0;
-
-    // Left Channel: Mute instantly if signal is extremely flat (hum) and low
-    if (ema_p2p_L > 22) {
-        if (diff_L < 5 && ema_p2p_L < 45) {
-            an_izm_l = 0; // Classify as static hum -> Mute
-        } else {
-            an_izm_l = ema_p2p_L - 15; // Active music -> High sensitivity subtraction
-        }
+    if (ema_p2p_L > 20) {
+        an_izm_l = ema_p2p_L - 15;
+    }
+    if (ema_p2p_R > 20) {
+        an_izm_r = ema_p2p_R - 15;
     }
 
-    // Right Channel: Mute instantly if signal is extremely flat (hum) and low
-    if (ema_p2p_R > 22) {
-        if (diff_R < 5 && ema_p2p_R < 45) {
-            an_izm_r = 0; // Classify as static hum -> Mute
-        } else {
-            an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
-        }
-    }
     // Shared AGC Max Peak & Min Floor Tracking
     static int dynamic_max = 64;
     static int dynamic_min = 0;
@@ -165,41 +132,42 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
         dynamic_max = 64;
         dynamic_min = 0;
     } else if (dynamic_max > 64) {
-        dynamic_max -= (dynamic_max >> 4) + 1; // Smooth fast decay
+        dynamic_max -= (dynamic_max >> 5) + 1; // Smooth decay
     }
 
-    // Floor tracking (Đáy âm lượng của bài nhạc đang phát để giữ độ tương phản)
+    // Floor tracking (Đáy âm lượng thực tế)
     if (max_val > 0) {
         if (min_val < dynamic_min) {
             dynamic_min = min_val;
         } else {
-            dynamic_min += (min_val - dynamic_min) >> 6; // Co giãn chậm lên phía trên
-        }
-        // Giới hạn đáy tối đa bằng 40% đỉnh để tránh mất dải động trung bình
-        int min_limit = (dynamic_max * 4) / 10;
-        if (dynamic_min > min_limit) {
-            dynamic_min = min_limit;
+            dynamic_min += (min_val - dynamic_min) >> 5; // Co giãn sát theo đáy nhạc thực tế
         }
     } else {
         dynamic_min = 0;
     }
 
     // Active dynamic range window
-    uint32_t active_range = (dynamic_max > dynamic_min) ? (dynamic_max - dynamic_min) : 32;
-    if (active_range < 48) active_range = 48; // Giới hạn dải tối thiểu để tránh quá nhạy ở âm lượng cực nhỏ
+    uint32_t active_range = (dynamic_max > dynamic_min) ? (dynamic_max - dynamic_min) : 48;
+    if (active_range < 48) active_range = 48;
+
+    // Flatness mute logic: Nhận diện nhiễu ù tĩnh khi âm lượng nhỏ và phẳng lì để ngắt đèn ngay lập tức
+    uint8_t is_noise = 0;
+    if (dynamic_max < 75 && (dynamic_max - dynamic_min) < 18) {
+        is_noise = 1;
+    }
 
     // Square-Root Scaling for high dynamic range and responsiveness
     uint8_t lvl_L = 0;
     uint8_t lvl_R = 0;
 
-    if (an_izm_l > dynamic_min) {
+    if (!is_noise && an_izm_l > dynamic_min) {
         uint32_t ratio_l = ((uint32_t)(an_izm_l - dynamic_min) * 10000UL) / active_range;
         if (ratio_l > 10000UL) ratio_l = 10000UL;
         uint32_t sqrt_l = isqrt(ratio_l * 10000UL);
         lvl_L = (uint8_t)((sqrt_l * AUDIO_MAX_LEVEL) / 10000UL);
     }
 
-    if (an_izm_r > dynamic_min) {
+    if (!is_noise && an_izm_r > dynamic_min) {
         uint32_t ratio_r = ((uint32_t)(an_izm_r - dynamic_min) * 10000UL) / active_range;
         if (ratio_r > 10000UL) ratio_r = 10000UL;
         uint32_t sqrt_r = isqrt(ratio_r * 10000UL);
