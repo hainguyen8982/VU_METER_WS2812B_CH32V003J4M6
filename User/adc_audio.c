@@ -136,7 +136,7 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
 
     // Left Channel: Mute instantly if signal is extremely flat (hum) and low
     if (ema_p2p_L > 22) {
-        if (diff_L < 15 && ema_p2p_L < 75) {
+        if (diff_L < 7 && ema_p2p_L < 60) {
             an_izm_l = 0; // Classify as static hum -> Mute
         } else {
             an_izm_l = ema_p2p_L - 15; // Active music -> High sensitivity subtraction
@@ -145,7 +145,7 @@ AudioLevels_t ADC_Audio_ReadLevels(void)
 
     // Right Channel: Mute instantly if signal is extremely flat (hum) and low
     if (ema_p2p_R > 22) {
-        if (diff_R < 15 && ema_p2p_R < 75) {
+        if (diff_R < 7 && ema_p2p_R < 60) {
             an_izm_r = 0; // Classify as static hum -> Mute
         } else {
             an_izm_r = ema_p2p_R - 15; // Active music -> High sensitivity subtraction
